@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Environment (contains personal paths)
+.env
+
+# User data (if accidentally placed in project root)
+/pm.db
+/backup.sql
+/html/
+/thumbnails/
