@@ -68,7 +68,7 @@ project-manager/
 
 ## 自定义
 
-仪表盘围绕一组特定的需求类型（UI设计、数据分析、课程制作、内部提效）和 4 月起的财年构建。如果你的工作流不同，需要修改 `render_html.py` 和 `schema.sql`——封面价值公式、KPI 指标、图表标签、类型颜色都很直观。既然你已经在用 AI agent 操作系统，直接告诉它帮你适配仪表盘即可。
+仪表盘围绕一组特定的需求类型（UI设计、数据分析、课程制作、内部提效）和 4 月起的财年构建。如果你的工作流不同，需要修改 `render_html.py`、`render_queries.py`、`render_components.py` 和 `schema.sql`——封面价值公式、KPI 指标、图表标签、类型颜色都很直观。既然你已经在用 AI agent 操作系统，直接告诉它帮你适配仪表盘即可。
 
 ## 配置
 
@@ -78,7 +78,7 @@ project-manager/
 | `FY_START_MONTH` | 4 | 财年起始月 |
 | `FY_END_MONTH` | 3 | 财年结束月 |
 
-定义在 `scripts/db.py`。
+定义在 `scripts/config.py`。
 
 ---
 

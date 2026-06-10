@@ -2,64 +2,83 @@
 
 ## 项目概述
 
-以本地 SQLite 为唯一数据源，CLI + AI agent 负责写入和维护，本地静态 HTML 负责日常展示。
+本项目是本地优先的需求管理、排期管理与产出统计系统。SQLite 是唯一数据源，CLI 与 AI agent 负责数据写入和维护，静态 HTML 页面负责日常查看。
 
-- 数据源：`pm.db`（位于数据目录，见下方架构说明）
-- 操作入口：`scripts/pm.py` + `skills/project-manager.md`
-- 展示层：`calendar.html`、`recent.html`、`history.html`、`dashboard.html`
-- 缩略图：本地 WebP，800px 长边
+- 数据源：数据目录下的 `pm.db`
+- 操作入口：`scripts/pm.py` 与 `skills/project-manager.md`
+- 展示页面：`calendar.html`、`recent.html`、`history.html`、`dashboard.html`
+- 缩略图：数据目录下 `thumbnails/` 中的 WebP 文件，推荐 800px 长边
 
 ## 代码与数据分离
 
-项目代码和数据分开存放，通过 `PM_DATA_DIR` 环境变量控制。
+项目代码和业务数据分开存放，通过 `.env` 或环境变量配置：
 
-- 设置了 `PM_DATA_DIR`：数据目录为指定路径
-- 未设置：自动使用项目内的 `demo/` 目录（含示例数据，clone 即用）
+| 变量 | 说明 |
+|------|------|
+| `PM_DATA_DIR` | 数据目录；未设置时使用项目内 `demo/` |
+| `PM_DEFAULT_PROJECT` | 创建需求时的默认项目名 |
+| `PM_DEFAULT_OWNER` | 创建排期时的默认负责人 |
 
-数据目录内包含：`pm.db`、`backup.sql`、`html/`、`thumbnails/`
+数据目录包含：
+
+- `pm.db`
+- `backup.sql`
+- `html/`
+- `thumbnails/`
 
 ## 整体架构
 
 ```
-本地 SQLite（唯一数据源）── 位于数据目录
+本地 SQLite（pm.db）
     │
-    ├── scripts/pm.py ─────────→ doctor / stats / render-html / schedule move
+    ├── scripts/pm.py ──────────────→ 统一 CLI
     │
-    ├── Agent(project-manager) ←→ CRUD / 查询 / 交付 / 缩略图 / 排期
+    ├── requirement_ops.py ─────────→ 需求创建 / 交付 / 插入后推
+    ├── schedule_ops.py ────────────→ 排期添加 / 移动 / 调整
+    ├── holiday_ops.py ─────────────→ 公共假期 / 个人请假
+    ├── schedule_utils.py ──────────→ 工作日与非工作日日期计算
     │
-    ├── html/ ─────────────────→ 日历 / 近期任务 / 历史任务 / 仪表盘
+    ├── render_html.py ─────────────→ 页面生成入口
+    ├── render_queries.py ──────────→ 展示层查询与聚合
+    ├── render_components.py ───────→ HTML 组件 / CSS / JS
+    │
+    └── html/ ──────────────────────→ 静态展示页面
 ```
 
 ## 文件结构
 
 ```
 project-manager/
-├── notes.md                   # 本文件
-├── .env.example               # PM_DATA_DIR 配置示例
-│
-├── demo/                      # 示例数据（未设置 PM_DATA_DIR 时使用）
+├── notes.md
+├── README.md / README_ZH_CN.md
+├── .env.example
+├── demo/
 │   ├── pm.db
 │   ├── backup.sql
-│   ├── html/                  # 预生成的演示页面
+│   ├── html/
 │   └── thumbnails/
-│
 ├── sql/
-│   └── schema.sql             # 建表 DDL + VIEW 定义
-│
+│   └── schema.sql
 ├── scripts/
-│   ├── pm.py                  # 统一 CLI 入口，只做参数解析和分发
-│   ├── db.py                  # 数据库连接、路径解析、常量
+│   ├── config.py              # .env、路径、默认值、业务常量
+│   ├── db.py                  # SQLite 连接、备份、通用 DB 工具
+│   ├── pm.py                  # 统一 CLI 入口
+│   ├── requirement_ops.py     # 需求创建、交付、插入后推
+│   ├── schedule_ops.py        # 排期添加、移动、调整
+│   ├── holiday_ops.py         # 公共假期、个人请假
+│   ├── schedule_utils.py      # 工作日、非工作日、日期拆段
+│   ├── render_html.py         # HTML 页面生成入口
+│   ├── render_queries.py      # 页面查询与统计聚合
+│   ├── render_components.py   # 页面组件、CSS、JS
+│   ├── compute_periods.py     # 统计周期日期计算
 │   ├── doctor.py              # 数据健康检查
 │   ├── stats.py               # 统计查询
-│   ├── schedule_ops.py        # 排期写库操作
-│   ├── render_html.py         # 静态 HTML 展示层生成
-│   ├── output.py              # 终端表格输出
-│   ├── init.py                # 初始化：建表 + stat_periods 种子数据
-│   ├── compute_periods.py     # 统计周期日期计算
-│   └── schedule_utils.py      # 排期后移 + 周末拆分
-│
+│   ├── init.py                # 初始化数据库
+│   └── output.py              # 终端表格输出
+├── tests/
+│   └── test_project_manager.py
 └── skills/
-    └── project-manager.md     # 本地数据 Skill（CRUD、查询、排期后移）
+    └── project-manager.md
 ```
 
 ## 表结构
@@ -68,72 +87,76 @@ project-manager/
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `id` | TEXT PK (UUID) | ✅ | |
+| `id` | TEXT PK | ✅ | UUID |
 | `name` | TEXT | ✅ | 需求名称 |
 | `project_id` | TEXT FK → projects | ✅ | 所属项目 |
 | `type_id` | TEXT FK → req_types | ✅ | 需求类型 |
+| `requesters` | TEXT | ✅ | 需求方；系统占位为 `__sys__` |
 | `received_y/m/d` | INTEGER | ✅ | 接收日期 |
-| `requesters` | TEXT | ✅ | 需求方（单个名称；系统占位为 `__sys__`） |
-| `ui_pages` | INTEGER | | UI 页面数（UI设计交付前必填） |
 | `expected_y/m/d` | INTEGER | | 期望交付 |
-| `actual_y/m/d` | INTEGER | | 实际交付（写入即标记交付） |
+| `actual_y/m/d` | INTEGER | | 实际交付 |
+| `ui_pages` | INTEGER | | UI 页面数，UI设计交付前必填 |
 | `delivery_url` | TEXT | | 交付物链接 |
-| `delivery_thumbnail` | TEXT | | thumbnails/ 下相对路径 |
+| `delivery_thumbnail` | TEXT | | `thumbnails/` 下相对路径 |
 | `notes` | TEXT | | 备注 |
 
 ### schedules（排期）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `id` | TEXT PK (UUID) | |
+| `id` | TEXT PK | UUID |
 | `requirement_id` | TEXT FK → requirements | 关联需求 |
 | `start_y/m/d` | INTEGER | 开始日期 |
 | `end_y/m/d` | INTEGER | 结束日期 |
-| `owner` | TEXT | 负责人（`-` 表示系统占位，如公共假期） |
+| `owner` | TEXT | 负责人；`-` 表示公共假期 |
 
 ### cover_outputs（封面图输出）
 
-| 字段 | 类型 |
-|------|------|
-| `id` | TEXT PK (UUID) |
-| `date_y/m/d` | INTEGER |
-| `count` | INTEGER |
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | TEXT PK | UUID |
+| `date_y/m/d` | INTEGER | 日期 |
+| `count` | INTEGER | 数量 |
 
 ### stat_periods（统计周期）
 
-只存 id/name/type，日期由 `compute_periods.py` 计算写回。17 条：12 月 + 2 学期 + 3 财年（当前财年 + 前 2 个）。
+`stat_periods` 存储周期名称与日期边界。日期由 `compute_periods.py` 自动计算，包含 12 个月、2 个学期、3 个财年。
 
 | 字段 | 说明 |
 |------|------|
-| `name` | M01-4月 ~ M12-3月, S1, S2, FY-{start} ~ FY-{end} |
+| `name` | `M01-4月` ~ `M12-3月`、`S1`、`S2`、`FY-XX` |
 | `type` | 月 / S / 财年 |
 | `start_* / end_*` | 周期起止日期 |
-| `start_before_* / end_after_*` | 起止 ±1 天（v_stats_by_period JOIN 用） |
+| `start_before_* / end_after_*` | 起止 ±1 天，用于统计视图 JOIN |
 
-## 统计周期日期规则
+## 视图
 
-所有周期（月/S/财年）锚定同一个当前财年，未来周期数据为 0。
+- `v_requirements`：需求状态、time_span、days_to_delivery
+- `v_schedules`：排期 duration、需求名、项目名
+- `v_stats_by_period`：需求数、UI 页面、报表、课程、封面价值、内部提效
 
-财年起始月由 `db.py` 中的 `FY_START_MONTH`（默认 4）和 `FY_END_MONTH`（默认 3）定义。学期为 S1（4~9月）和 S2（10~3月），月份从 M01（4月）到 M12（3月）。
+## 日期与统计规则
 
-```python
-# 财年：FY_START_MONTH 月 ~ 次年 FY_END_MONTH 月。FY-XX 中 XX = 结束年
-def _fiscal_dates(name):  # FY-25 -> 2024-04-01 ~ 2025-03-31
-    fy_end_year = int(name[3:]) + 2000
-    return (fy_end_year-1, FY_START_MONTH, 1), (fy_end_year, FY_END_MONTH, last_day)
+业务常量定义在 `scripts/config.py`：
 
-# 当前财年起始年
-def _current_fy_start(today):  # 6月 -> 今年FY_START_MONTH月；1月 -> 去年FY_START_MONTH月
-    return today.year if today.month >= FY_START_MONTH else today.year - 1
-```
+| 常量 | 默认值 | 说明 |
+|------|--------|------|
+| `COVER_VALUE_MULTIPLIER` | 20 | 封面图价值乘数 |
+| `FY_START_MONTH` | 4 | 财年起始月 |
+| `FY_END_MONTH` | 3 | 财年结束月 |
 
-`compute_periods.py` 在每次需要时重算全部 17 个周期并写回。
+财年以结束年命名：`FY-25` 表示 `2024-04-01` 到 `2025-03-31`。S1 为 4 月到 9 月，S2 为 10 月到次年 3 月。`compute_periods.py` 每次运行都会按当前日期重算全部统计周期。
 
-## SQL VIEW
+## 排期规则
 
-- `v_requirements`：状态、time_span、days_to_delivery
-- `v_schedules`：duration、关联需求名和项目名
-- `v_stats_by_period`：需求数/UI页面/报表/课程/封面价值/内部提效，按交付日期归入各周期
+排期计算以工作日为基础：
+
+- 周六、周日不是工作日。
+- 公共假期记录在 `schedules` 表，`owner='-'`，需求名为 `__公共假期__`。
+- 个人请假记录在 `schedules` 表，需求名为 `__请假__`，`owner` 为请假人。
+- 新增排期、移动排期、调整排期会跳过周末、公共假期和对应负责人的个人请假。
+- 跨非工作日的排期会拆成多个连续工作日段。
+- 批量移动必须先 dry-run 预览，再显式 apply 写入。
 
 ## 展示层
 
@@ -143,12 +166,12 @@ python scripts/pm.py render-html
 
 输出到数据目录下的 `html/`：
 
-- `calendar.html`：排期日历。窗口为过去 2 个月 + 当前月 + 未来 2 个月，打开时默认滚动到当前月。
-- `recent.html`：近期任务。展示完成日期为空或最近 7 天内完成的需求，按完成状态分组；缩略图使用正方形 cover、center top 布局，交付链接直接可点击。
-- `history.html`：历史任务。全量展示完成日期不为空的需求，以缩略图为核心，自适应卡片网格布局；交付链接直接可点击。
-- `dashboard.html`：统计仪表盘。展示 KPI（需求数量/UI页面/封面图价值/内部提效）、月度统计、需求方 Top 10、按类型统计（环形饼图）、报表/课程财年统计。
+- `calendar.html`：排期日历。窗口为当前月前 3 个月到未来 3 个月，按负责人着色，打开时自动滚动到当前月。
+- `recent.html`：近期任务。展示进行中需求和最近 7 天完成的需求，支持备注、缩略图和交付链接。
+- `history.html`：历史任务。展示所有已完成需求，以缩略图卡片布局呈现。
+- `dashboard.html`：统计仪表盘。展示 KPI、月度统计、财年对比、需求方 Top 10、类型分布。
 
-HTML 页面是数据库快照；数据库变更后重新运行 `render-html` 刷新。
+HTML 页面是数据库快照；数据库变更后运行 `render-html` 刷新。
 
 导航顺序：日历 / 近期任务 / 历史任务 / 仪表盘。快捷键：`1` 日历，`2` 近期任务，`3` 历史任务，`4` 仪表盘。
 
@@ -158,91 +181,73 @@ HTML 页面是数据库快照；数据库变更后重新运行 `render-html` 刷
 2. 如果文件不存在，回退到 `thumbnails/{requirement_id}.webp`。
 3. 如果仍不存在，显示类型占位。
 
-## 排期后移
+## CLI
 
-CLI 和 agent 通过 `scripts/schedule_ops.py` + `scripts/schedule_utils.py` 处理排期后移：
-
-- `add_business_days(date, days)`：跳过周六日，计算新日期
-- `split_cross_weekend(start, end)`：跨周末自动拆为多段
-- 第一段 UPDATE 原记录，后续段 INSERT 新记录
-
-触发词：「把张三从 X 号起的任务往后推 N 天」。
-
-## 使用指南
-
-### 统一 CLI
+### 健康检查与展示
 
 ```bash
 python scripts/pm.py doctor
 python scripts/pm.py stats requester
 python scripts/pm.py compute-periods
 python scripts/pm.py render-html
-python scripts/pm.py schedule move --owner 张三 --from 2026-06-05 --days 3
-python scripts/pm.py schedule move --owner 张三 --from 2026-06-05 --days 3 --apply
 ```
 
-- `doctor`：检查数据库完整性、外键、关键必填字段、日期合法性、视图可查询和实际 schema 约束。
-- `stats requester`：按需求方统计需求数、已交付数、进行中数，默认排除 `__sys__` 系统占位需求。
-- `compute-periods`：重算 `stat_periods` 日期。
-- `render-html`：生成 `calendar.html`、`recent.html`、`history.html`、`dashboard.html` 四个静态展示页面。
-- `schedule move`：排期后移；默认只预览，必须加 `--apply` 才写入本地数据库。
+### 需求
 
-### 初始化
+```bash
+python scripts/pm.py requirement create \
+  --name 需求名 --type UI设计 --requester 张三 --project 官方网站 \
+  --owner 小王 --duration-days 3 --start 2026-06-10
+
+python scripts/pm.py requirement deliver 需求名 --url https://example.com
+python scripts/pm.py requirement thumbnail 需求名 交付缩略图.webp
+
+python scripts/pm.py requirement insert \
+  --name 新需求 --type 数据分析 --requester 张三 --before 目标需求 \
+  --owner 小王 --duration-days 1 --push-days 1
+```
+
+### 排期
+
+```bash
+python scripts/pm.py schedule add 需求名 --start 2026-06-10 --end 2026-06-12 --owner 小王
+python scripts/pm.py schedule move --owner 小王 --from 2026-06-10 --days 3    # 后移 3 天
+python scripts/pm.py schedule move --owner 小王 --from 2026-06-10 --days -3   # 前移 3 天
+python scripts/pm.py schedule move --owner 小王 --from 2026-06-10 --days 3 --apply
+python scripts/pm.py schedule adjust <schedule_id> --days 2    # 延长 2 天
+python scripts/pm.py schedule adjust <schedule_id> --days -2   # 缩短 2 天
+```
+
+### 假期与请假
+
+```bash
+python scripts/pm.py holiday add --start 2026-10-01 --end 2026-10-07
+python scripts/pm.py holiday leave --owner 小王 --start 2026-08-04 --end 2026-08-05
+```
+
+Agent 操作规范详见 `skills/project-manager.md`。
+
+## 初始化与测试
 
 ```bash
 python scripts/init.py
+python -m unittest discover -s tests
+python -m py_compile scripts/*.py tests/*.py
 ```
 
-创建空数据库 + schema + 17 条 stat_periods + 计算日期。财年按当前日期动态生成（current_fy - 2 ~ current_fy，共 3 个财年）。
-
-### 添加需求
-
-告诉 agent：「加个需求：XXX，YYY项目，UI设计，6月5号收到，预计6月12号交付」。agent 写入 requirements 表。
-
-### 标记交付
-
-告诉 agent：「把 XXX 需求标记为已交付」。agent 写入 actual_y/m/d。
-
-**交付日期确定**：若交付时未指定日期，系统默认取该需求在 `schedules` 中的最大结束日期作为实际交付日期；若该需求未在日历中排期，则拒绝交付并提示用户排期缺失。
-
-**约束**：UI设计类必须先填 `ui_pages > 0` 才能交付；`delivery_url` 和 `delivery_thumbnail` 为空时会提醒但不阻止。
-
-### 添加缩略图
-
-告诉 agent 图片路径，自动缩放至 800px 长边 WebP，存入数据目录的 `thumbnails/`，更新 `delivery_thumbnail`。
-
-### 排期后移
-
-告诉 agent：「把张三从 6 月 5 号起的任务往后推 3 个工作日」。agent 先调用 `python scripts/pm.py schedule move --owner 张三 --from 2026-06-05 --days 3` 预览，确认后加 `--apply` 写入本地数据库。
-
-### 刷新展示层
-
-```bash
-python scripts/pm.py render-html
-```
-
-## 业务常量
-
-定义在 `scripts/db.py`：
-
-| 常量 | 默认值 | 说明 |
-|------|--------|------|
-| `COVER_VALUE_MULTIPLIER` | 20 | 封面图价值乘数 |
-| `FY_START_MONTH` | 4 | 财年起始月 |
-| `FY_END_MONTH` | 3 | 财年结束月 |
+`init.py` 创建空数据库、加载 schema、写入系统统计周期并计算周期日期。测试基于 `demo/pm.db` 的临时副本运行，不修改正式数据。
 
 ## 决策记录
 
 | 议题 | 决策 |
 |------|------|
-| 存储 | SQLite，单文件 |
+| 存储 | SQLite 单文件 |
 | ID | UUID |
-| 日期格式 | y/m/d 三列拆分 |
-| 计算字段 | SQL VIEW（3 个） |
-| 统计周期 | 同财年锚定，未来周期为 0 |
-| 财年定义 | FY_START_MONTH 月 ~ 次年 FY_END_MONTH 月，命名用结束年 |
-| 本地展示层 | 静态 HTML 快照，按需生成 |
-| 代码与数据分离 | PM_DATA_DIR 环境变量，默认 demo/ |
-| 排期后移 | 跳过周末，自动拆段 |
-| 缩略图 | 800px 长边 WebP |
-| 数据校验 | 外键约束 + NOT NULL |
+| 日期格式 | y/m/d 三列 |
+| 计算字段 | SQL VIEW |
+| 数据目录 | `PM_DATA_DIR`，默认 `demo/` |
+| 财年定义 | 4 月到次年 3 月，按结束年命名 |
+| 展示层 | 静态 HTML 快照 |
+| 排期 | 工作日感知，自动跳过周末、公共假期、个人请假 |
+| 缩略图 | 本地 WebP |
+| 数据校验 | 外键约束、NOT NULL、doctor 检查、单元测试 |

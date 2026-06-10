@@ -2,7 +2,13 @@
 
 本地 SQLite 项目管理。Agent 通过此 Skill 执行 CRUD、查询和页面生成。
 
-**⚠️ 必须先读 `.env`**：每次操作前，先读取项目根目录的 `.env` 文件，获取 `PM_DATA_DIR` 的值作为数据库路径。若 `.env` 不存在或未设置 `PM_DATA_DIR`，回退到 `demo/pm.db`。**禁止不读 `.env` 直接使用 `demo/pm.db`。**
+**⚠️ 必须先读 `.env`**：每次操作前，先读取项目根目录的 `.env` 文件，获取路径和默认值：
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `PM_DATA_DIR` | 数据库及产物目录 | `demo/` |
+| `PM_DEFAULT_PROJECT` | 默认项目名（加需求时自动填入） | — |
+| `PM_DEFAULT_OWNER` | 默认执行人（加排期时自动填入） | —
 
 **数据库**: 数据目录下的 `pm.db`（`PM_DATA_DIR` 指定或默认 `demo/`）。
 
@@ -69,56 +75,132 @@ SELECT * FROM v_requirements WHERE status='🚀进行中' ORDER BY received_y DE
 ```
 
 ### 加需求
-```sql
-INSERT INTO requirements (id, name, project_id, type_id, received_y, received_m, received_d, expected_y, expected_m, expected_d)
-VALUES ('<UUID>', '需求名', '<project_id>', '<type_id>', 2026, 6, 3, 2026, 6, 10);
+
+**必须用脚本**：`create_requirement()` 自动处理默认值（project、owner、received=today）和排期分段。
+
+```python
+from requirement_ops import create_requirement
+
+# 只加需求，不排期
+req_id = create_requirement(db_path, '需求名', '<type_id>', '需求方')
+
+# 加需求 + 自动排期（duration_days=3 表示3个工作日，自动分段）
+req_id = create_requirement(db_path, '需求名', '<type_id>', '需求方',
+    duration_days=3, notes='备注', project_id='<project_id>', owner='<owner>')
+```
+
+### 添加排期
+
+**必须用脚本**：`add_schedule()` 自动跳过周末+假期+请假，跨非工作日自动分段。
+
+```python
+from schedule_ops import add_schedule
+from datetime import date
+
+add_schedule(db_path, '<requirement_id>', date(2026, 6, 3), date(2026, 6, 5))
 ```
 
 ### 标记交付
 
-写入 `actual_y/m/d` 即标记。**规则**：
-1. 若未指定日期，取 `schedules` 中该需求的最大 `end` 日期
-2. 若 schedules 无记录，拒绝交付并提示排期
-3. UI设计类必须 `ui_pages > 0`，否则拒绝
-4. `delivery_url`/`delivery_thumbnail` 为空时提醒但不阻止
+**必须用脚本**：`mark_delivered()` 自动校验规则（排期存在、UI设计需ui_pages>0）、自动取排期结束日、提醒缺失的url/缩略图。
 
-```sql
--- 查最后排期结束日期
-SELECT end_y, end_m, end_d FROM schedules WHERE requirement_id = '<id>'
-ORDER BY end_y DESC, end_m DESC, end_d DESC LIMIT 1;
+```python
+from requirement_ops import mark_delivered
 
--- 检查属性
-SELECT type_id, ui_pages, delivery_url, delivery_thumbnail FROM requirements WHERE id='<id>';
+# 自动取排期最后一天
+mark_delivered(db_path, '<req_id>', delivery_url='https://...')
 
--- 写入
-UPDATE requirements SET actual_y=<y>, actual_m=<m>, actual_d=<d> WHERE id='<id>';
+# 指定交付日期
+from datetime import date
+mark_delivered(db_path, '<req_id>', actual_date=date(2026, 6, 10))
 ```
 
-### 添加排期
+### 公共假期
+
+公共假期和请假在 `schedules` 表中以特殊方式存储：
+- **公共假期**: `owner='-'`，`requirement_id` 指向 `__公共假期__`
+- **个人请假**: `requirement_id` 指向 `__请假__`，`owner` 为对应人员
+
+#### 查假期
 ```sql
-INSERT INTO schedules (id, requirement_id, start_y, start_m, start_d, end_y, end_m, end_d, owner)
-VALUES ('<UUID>', '<requirement_id>', 2026, 6, 3, 2026, 6, 5, '张三');
+SELECT r.name AS type, s.start_y, s.start_m, s.start_d, s.end_y, s.end_m, s.end_d, s.owner
+FROM schedules s JOIN requirements r ON s.requirement_id=r.id
+WHERE s.owner='-' OR r.name='__请假__'
+ORDER BY s.start_y, s.start_m, s.start_d;
+```
+
+#### 加公共假期
+
+**触发词**：「加个假期 10月1日到7日」「国庆放假」
+
+**⚠️ 必须用脚本，不要手写 SQL**：`add_holiday_and_push()` 会自动后推所有受影响的排期。
+
+```python
+from holiday_ops import add_holiday_and_push
+from datetime import date
+
+add_holiday_and_push(db_path, date(2026, 10, 1), date(2026, 10, 7))
+```
+
+#### 加请假
+
+**触发词**：「张三 8月4-5号请假」「加个请假」
+
+**⚠️ 必须用脚本，不要手写 SQL**：`add_holiday_and_push(holiday=False)` 会自动后推受影响排期。
+
+```python
+add_holiday_and_push(db_path, date(2026, 8, 4), date(2026, 8, 5), holiday=False, owner='张三')
 ```
 
 ### 添加缩略图
 
 缩放至 800px 长边 WebP，写入 `thumbnails/`，更新 `delivery_thumbnail`。
 
-```sql
-UPDATE requirements SET delivery_thumbnail='<文件名>.webp' WHERE id='<id>';
+```python
+from requirement_ops import set_delivery_thumbnail
+
+set_delivery_thumbnail(db_path, '<req_id>', '<文件名>.webp')
 ```
 
-### 排期后移
+### 排期移动
 
-**触发词**：「把张三从 6月5号起的任务往后推 3 天」
+**触发词**：「把张三从 6月5号起的任务往后推 3 天」「把张三的任务提前 2 天」
 
-**流程**：
-1. 查 `owner=某人 AND start>=某天` 的排期
-2. 用 `add_business_days()` 跳过周末算新日期
-3. 用 `split_cross_weekend()` 拆分跨周末的排期
-4. 第一段 UPDATE 原记录，后续段 INSERT 新记录
+**⚠️ 先 dry-run 后执行**：先用 `plan_schedule_move()` 预览变更，确认后再 `apply_schedule_move()`。正数后移，负数前移。
 
-**规则**：跳过周末，跨周末自动拆段，不修改非目标 owner。
+### 排期调整
+
+**触发词**：「把 XX 任务延长 2 天」「把 XX 排期缩短 2 天」
+
+```python
+from schedule_ops import adjust_schedule_end
+
+adjust_schedule_end(db_path, '<schedule_id>', 2)   # 延长 2 个工作日
+adjust_schedule_end(db_path, '<schedule_id>', -2)  # 缩短 2 个工作日
+```
+
+### 插入新任务并后推
+
+**触发词**：「加个需求 XX，插到 YY 前面，占用 N 天，后面的往后推」
+
+**必须用脚本**：`insert_and_push()` 一步完成加需求+排期+后推。
+
+```python
+from requirement_ops import insert_and_push
+
+insert_and_push(db_path, '新需求名', '<type_id>', '需求方',
+    insert_before_req_name='目标需求名', duration_days=1, push_days=1)
+```
+
+### 排期操作注意事项
+
+**Agent 必须遵守的原则**：
+
+1. **先 dry-run 后执行** — 排期批量移动先用 `plan_schedule_move()` 看预览，确认无误再 `apply_schedule_move()`。
+2. **脚本 > 手动 SQL** — 所有写操作都必须用脚本函数，禁止手写 SQL 执行这些操作。需求创建/交付/插入用 `requirement_ops.py`，假期/请假用 `holiday_ops.py`，排期添加/移动/调整用 `schedule_ops.py`。脚本保证假期感知、分段正确、校验完整。
+3. **写后自动刷新** — 以下写操作完成后必须自动执行 `python scripts/pm.py render-html` 刷新页面：
+   - 加需求 / 加排期 / 标记交付 / 加假期 / 加请假 / 排期移动 / 排期调整 / 插入新任务并后推 / 添加缩略图
+   - 查需求和统计查询等只读操作不需要刷新
 
 ### 统计查询
 ```sql

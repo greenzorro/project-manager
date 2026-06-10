@@ -68,7 +68,7 @@ Zero external dependencies. All imports are from the Python standard library.
 
 ## Customization
 
-The dashboard is built around a specific set of requirement types (UI design, data analysis, course production, internal efficiency) and a fiscal year starting in April. If your workflow differs, you'll want to customize `render_html.py` and `schema.sql`—the cover value formula, KPI metrics, chart labels, and type colors are all straightforward to modify. Since you're already using an AI agent to operate the system, you can just ask it to adapt the dashboard to your needs.
+The dashboard is built around a specific set of requirement types (UI design, data analysis, course production, internal efficiency) and a fiscal year starting in April. If your workflow differs, you'll want to customize `render_html.py`, `render_queries.py`, `render_components.py`, and `schema.sql`—the cover value formula, KPI metrics, chart labels, and type colors are all straightforward to modify. Since you're already using an AI agent to operate the system, you can just ask it to adapt the dashboard to your needs.
 
 ## Configuration
 
@@ -78,7 +78,7 @@ The dashboard is built around a specific set of requirement types (UI design, da
 | `FY_START_MONTH` | 4 | Fiscal year start month |
 | `FY_END_MONTH` | 3 | Fiscal year end month |
 
-Defined in `scripts/db.py`.
+Defined in `scripts/config.py`.
 
 ---
 
