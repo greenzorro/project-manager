@@ -190,13 +190,14 @@ def render_requirement_group(title: str, rows: list[dict], show_actual: bool) ->
     body = ['<div class="task-list">']
     for row in rows:
         received = format_date(row["received_y"], row["received_m"], row["received_d"])
-        expected = format_date(row["expected_y"], row["expected_m"], row["expected_d"]) or "未设置"
+        expected = format_date(row["expected_y"], row["expected_m"], row["expected_d"])
         actual = format_date(row["actual_y"], row["actual_m"], row["actual_d"]) or "未完成"
         tags = [
             f'<span class="tag">{escape(row["requesters"])}</span>',
             f'<span class="tag">接收 {escape(received)}</span>',
-            f'<span class="tag">预期 {escape(expected)}</span>',
         ]
+        if expected:
+            tags.append(f'<span class="tag">预期 {escape(expected)}</span>')
         if show_actual:
             tags.append(f'<span class="tag">完成 {escape(actual)}</span>')
         pages = row["ui_pages"] or 0
