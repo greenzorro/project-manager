@@ -1,1 +1,13 @@
-Pillow>=10.0.0
+# 自动生成的依赖文件
+# Python环境: projects
+# 扫描文件数: 1
+# 推荐使用 uv 进行包管理
+
+# 核心依赖
+Pillow==12.0.0
+
+#
+# 使用说明:
+# 1. 安装 uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+# 2. 安装依赖: uv pip install -r requirements.txt
+# 3. 同步环境: uv sync
