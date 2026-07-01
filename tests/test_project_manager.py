@@ -24,6 +24,7 @@ from requirement_ops import create_requirement, insert_and_push, mark_delivered,
 from render_html import render_html
 from schedule_ops import add_schedule, adjust_schedule_end
 from stats import requester_stats
+from thumbnail import generate_thumbnail
 
 
 class ProjectManagerDryRunTests(unittest.TestCase):
@@ -654,6 +655,78 @@ class ProjectManagerDryRunTests(unittest.TestCase):
         self.run_pm("render-html", "--output-dir", str(output_dir))
         self.assertTrue((output_dir / "dashboard.html").exists())
         self.assertTrue((self.work_dir / "backup.sql").exists())
+
+    def test_thumbnail_generate_from_source(self):
+        """generate_thumbnail scales, converts, writes and updates DB."""
+        from PIL import Image
+
+        self.insert_req("dry-thumb", "Dry Thumb")
+        # Build a 2000x1000 source image in temp dir.
+        src = self.work_dir / "src.png"
+        Image.new("RGB", (2000, 1000), (255, 0, 0)).save(src)
+
+        # generate_thumbnail uses DATA_DIR for output; override env so the
+        # thumbnails dir lands inside the temp work dir.
+        import thumbnail as thumb_mod
+        original_data_dir = thumb_mod.DATA_DIR
+        thumb_mod.DATA_DIR = str(self.work_dir)
+        try:
+            filename = generate_thumbnail(
+                str(self.db_path), "dry-thumb", str(src)
+            )
+        finally:
+            thumb_mod.DATA_DIR = original_data_dir
+
+        # Filename is slugified name + .webp.
+        self.assertEqual(filename, "DryThumb.webp")
+        out_path = self.work_dir / "thumbnails" / filename
+        self.assertTrue(out_path.exists())
+        # Long edge capped at 800.
+        with Image.open(out_path) as im:
+            self.assertLessEqual(max(im.size), 800)
+        # DB updated.
+        self.assertEqual(
+            self.scalar(
+                "SELECT delivery_thumbnail FROM requirements WHERE id='dry-thumb'"
+            ),
+            "DryThumb.webp",
+        )
+
+    def test_cli_thumbnail_generate_via_source(self):
+        """CLI `requirement thumbnail <req> --source <path>` end-to-end."""
+        from PIL import Image
+
+        self.insert_req("dry-cli-thumb", "Dry CLI Thumb")
+        src = self.work_dir / "cli_src.png"
+        Image.new("RGB", (1600, 400), (0, 128, 0)).save(src)
+
+        # Override DATA_DIR for this subprocess run via env. The CLI reads
+        # DATA_DIR at import time, so we set PM_DATA_DIR.
+        env = os.environ.copy()
+        env["PM_DATA_DIR"] = str(self.work_dir)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / "pm.py"),
+                "--db-path",
+                str(self.db_path),
+                "requirement",
+                "thumbnail",
+                "dry-cli-thumb",
+                "--source",
+                str(src),
+            ],
+            cwd=PROJECT_DIR,
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(
+            result.returncode, 0, msg=f"STDOUT:{result.stdout}\nSTDERR:{result.stderr}"
+        )
+        out_path = self.work_dir / "thumbnails" / "DryCLIThumb.webp"
+        self.assertTrue(out_path.exists())
 
     def test_cli_errors_are_reported(self):
         result = self.run_pm(

@@ -36,6 +36,7 @@
     ├── requirement_ops.py ─────────→ 需求创建 / 交付 / 插入后推
     ├── schedule_ops.py ────────────→ 排期添加 / 移动 / 调整
     ├── holiday_ops.py ─────────────→ 公共假期 / 个人请假
+    ├── thumbnail.py ───────────────→ 缩略图生成（缩放 + WebP + 写库）
     ├── schedule_utils.py ──────────→ 工作日与非工作日日期计算
     │
     ├── render_html.py ─────────────→ 页面生成入口
@@ -66,6 +67,7 @@ project-manager/
 │   ├── requirement_ops.py     # 需求创建、交付、插入后推
 │   ├── schedule_ops.py        # 排期添加、移动、调整
 │   ├── holiday_ops.py         # 公共假期、个人请假
+│   ├── thumbnail.py           # 缩略图生成（缩放 + WebP + 写库）
 │   ├── schedule_utils.py      # 工作日、非工作日、日期拆段
 │   ├── render_html.py         # HTML 页面生成入口
 │   ├── render_queries.py      # 页面查询与统计聚合
@@ -201,6 +203,7 @@ python scripts/pm.py requirement create \
 
 python scripts/pm.py requirement deliver 需求名 --url https://example.com
 python scripts/pm.py requirement thumbnail 需求名 交付缩略图.webp
+python scripts/pm.py requirement thumbnail 需求名 --source 源图路径.png
 
 python scripts/pm.py requirement insert \
   --name 新需求 --type 数据分析 --requester 张三 --before 目标需求 \

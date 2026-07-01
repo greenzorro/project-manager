@@ -64,7 +64,13 @@ project-manager/
 
 ## Dependencies
 
-Zero external dependencies. All imports are from the Python standard library.
+- [Pillow](https://python-pillow.org/) — for thumbnail image processing (resize + WebP conversion)
+
+All other imports are from the Python standard library.
+
+```bash
+pip install Pillow
+```
 
 ## Customization
 

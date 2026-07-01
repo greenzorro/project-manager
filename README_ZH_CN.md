@@ -64,7 +64,13 @@ project-manager/
 
 ## 依赖
 
-零外部依赖。所有 import 均来自 Python 标准库。
+- [Pillow](https://python-pillow.org/) — 缩略图图像处理（缩放 + WebP 转换）
+
+其余 import 均来自 Python 标准库。
+
+```bash
+pip install Pillow
+```
 
 ## 自定义
 

@@ -22,6 +22,7 @@ from render_html import render_html
 from requirement_ops import create_requirement, insert_and_push, mark_delivered, set_delivery_thumbnail
 from schedule_ops import add_schedule, adjust_schedule_end, apply_schedule_move, plan_schedule_move
 from stats import requester_stats
+from thumbnail import generate_thumbnail
 
 
 def parse_iso_date(value: str) -> date:
@@ -148,8 +149,21 @@ def command_requirement_insert(args: argparse.Namespace) -> int:
 
 
 def command_requirement_thumbnail(args: argparse.Namespace) -> int:
-    set_delivery_thumbnail(args.db_path, args.requirement, args.thumbnail)
-    print("Requirement thumbnail updated.")
+    if getattr(args, "source", None):
+        filename = generate_thumbnail(
+            args.db_path,
+            args.requirement,
+            args.source,
+            max_size=args.max_size,
+            quality=args.quality,
+        )
+        print(f"Thumbnail generated and set: {filename}")
+    else:
+        if not args.thumbnail:
+            print("error: either a thumbnail path or --source is required")
+            return 2
+        set_delivery_thumbnail(args.db_path, args.requirement, args.thumbnail)
+        print("Requirement thumbnail updated.")
     return 0
 
 
@@ -288,9 +302,12 @@ def build_parser() -> argparse.ArgumentParser:
     insert.add_argument("--push-days", type=int, default=1, help="business days to push subsequent tasks")
     insert.set_defaults(func=command_requirement_insert)
 
-    thumbnail = requirement_subparsers.add_parser("thumbnail", help="set delivery thumbnail")
+    thumbnail = requirement_subparsers.add_parser("thumbnail", help="set or generate delivery thumbnail")
     thumbnail.add_argument("requirement", help="requirement id or exact name")
-    thumbnail.add_argument("thumbnail", help="thumbnail path under thumbnails/")
+    thumbnail.add_argument("thumbnail", nargs="?", help="thumbnail path under thumbnails/ (omit with --source to generate)")
+    thumbnail.add_argument("--source", help="source image path to generate thumbnail from")
+    thumbnail.add_argument("--max-size", type=int, default=800, help="max long-edge pixels (default 800)")
+    thumbnail.add_argument("--quality", type=int, default=85, help="WebP quality 1-100 (default 85)")
     thumbnail.set_defaults(func=command_requirement_thumbnail)
 
     schedule = subparsers.add_parser("schedule", help="schedule operations")

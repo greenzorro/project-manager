@@ -154,7 +154,26 @@ add_holiday_and_push(db_path, date(2026, 8, 4), date(2026, 8, 5), holiday=False,
 
 ### 添加缩略图
 
-缩放至 800px 长边 WebP，写入 `thumbnails/`，更新 `delivery_thumbnail`。
+**推荐方式（一条命令生成）**：从源图缩放至 800px 长边 WebP，写入 `thumbnails/`，并自动更新 `delivery_thumbnail` 字段。
+
+```bash
+python scripts/pm.py requirement thumbnail "<需求名或id>" --source "<源图路径>"
+```
+
+可选参数：`--max-size 800`（长边像素上限）、`--quality 85`（WebP 质量）。
+
+生成的文件名自动取需求名 slug（CJK 字符保留，标点/空格剔除），输出到 `<DATA_DIR>/thumbnails/<slug>.webp`。
+
+**Python 调用**：
+
+```python
+from thumbnail import generate_thumbnail
+
+filename = generate_thumbnail(db_path, '<需求名或id>', '<源图路径>')
+# 等价于：缩放 → WebP → 写 thumbnails/ → 更新 DB
+```
+
+**仅写库（不生成图）**：如果缩略图文件已存在，只更新数据库字段：
 
 ```python
 from requirement_ops import set_delivery_thumbnail
