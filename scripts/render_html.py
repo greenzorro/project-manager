@@ -377,8 +377,8 @@ def render_metric_dual_row(
     return f"""
     <section class="metric-row">
       <div class="grid two">
-        {_col(key1, title1 + " — 财年", color_var1)}
-        {_col(key2, title2 + " — 财年", color_var2)}
+        {_col(key1, title1, color_var1)}
+        {_col(key2, title2, color_var2)}
       </div>
     </section>
     """
