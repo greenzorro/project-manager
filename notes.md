@@ -133,9 +133,11 @@ project-manager/
 
 ## 视图
 
-- `v_requirements`：需求状态、time_span、days_to_delivery
+- `v_requirements`：需求状态、time_span、days_to_delivery  
+  - 状态：有实际交付日 → 已完成；`name GLOB '__*'` → 特殊；否则进行中
 - `v_schedules`：排期 duration、需求名、项目名
-- `v_stats_by_period`：需求数、UI 页面、报表、课程、封面价值、内部提效
+- `v_stats_by_period`：需求数、UI 页面、报表、课程、封面张数 `cover_count`、内部提效  
+  - 封面价值 = `cover_count * COVER_VALUE_MULTIPLIER`（`config.py`）
 
 ## 日期与统计规则
 
@@ -143,7 +145,7 @@ project-manager/
 
 | 常量 | 默认值 | 说明 |
 |------|--------|------|
-| `COVER_VALUE_MULTIPLIER` | 20 | 封面图价值乘数 |
+| `COVER_VALUE_MULTIPLIER` | 20 | 封面图价值乘数（`cover_count` → 展示价值） |
 | `FY_START_MONTH` | 4 | 财年起始月 |
 | `FY_END_MONTH` | 3 | 财年结束月 |
 
@@ -238,7 +240,7 @@ python -m unittest discover -s tests
 python -m py_compile scripts/*.py tests/*.py
 ```
 
-`init.py` 创建空数据库、加载 schema、写入系统统计周期并计算周期日期。测试基于 `demo/pm.db` 的临时副本运行，不修改正式数据。
+`init.py` 创建空数据库、加载 schema、写入系统类型/系统项目/系统需求（`__公共假期__`、`__请假__`）、统计周期并计算周期日期。业务项目与业务需求类型由使用方或 Agent 后续添加。测试基于 `demo/pm.db` 的临时副本运行，不修改正式数据。
 
 ## 决策记录
 
@@ -253,4 +255,5 @@ python -m py_compile scripts/*.py tests/*.py
 | 展示层 | 静态 HTML 快照 |
 | 排期 | 工作日感知，自动跳过周末、公共假期、个人请假 |
 | 缩略图 | 本地 WebP |
-| 数据校验 | 外键约束、NOT NULL、doctor 检查、单元测试 |
+| 数据校验 | 外键约束、NOT NULL、doctor 检查（含需求 status 规则）、单元测试 |
+| 系统占位名 | 以 `__` 开头（`GLOB '__*'`），含公共假期、请假 |

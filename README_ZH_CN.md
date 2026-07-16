@@ -80,7 +80,7 @@ pip install Pillow
 
 | 常量 | 默认值 | 用途 |
 |------|--------|------|
-| `COVER_VALUE_MULTIPLIER` | 20 | 封面图价值乘数 |
+| `COVER_VALUE_MULTIPLIER` | 20 | 封面图价值乘数（`cover_count` × 乘数） |
 | `FY_START_MONTH` | 4 | 财年起始月 |
 | `FY_END_MONTH` | 3 | 财年结束月 |
 

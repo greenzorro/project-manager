@@ -73,7 +73,7 @@ CREATE VIEW v_requirements AS
 SELECT *,
   CASE
     WHEN actual_y IS NOT NULL THEN '✅已完成'
-    WHEN name LIKE '__%' THEN '⚠️特殊'
+    WHEN name GLOB '__*' THEN '⚠️特殊'
     ELSE '🚀进行中'
   END AS status,
   julianday(
@@ -112,7 +112,7 @@ SELECT sp.id AS period_id, sp.name AS period_name, sp.type AS period_type,
   COALESCE(SUM(CASE WHEN rt.name = '数据分析' THEN 1 ELSE 0 END), 0) AS reports,
   COALESCE(SUM(CASE WHEN rt.name = '课程制作' THEN 1 ELSE 0 END), 0) AS courses,
   COALESCE(SUM(CASE WHEN rt.name = '内部提效' THEN 1 ELSE 0 END), 0) AS efficiency,
-  (SELECT COALESCE(SUM(co.count * 20), 0) FROM cover_outputs co
+  (SELECT COALESCE(SUM(co.count), 0) FROM cover_outputs co
    WHERE julianday(
      co.date_y || '-' || printf('%02d', co.date_m) || '-' || printf('%02d', co.date_d)
    ) > julianday(
@@ -122,7 +122,7 @@ SELECT sp.id AS period_id, sp.name AS period_name, sp.type AS period_type,
      co.date_y || '-' || printf('%02d', co.date_m) || '-' || printf('%02d', co.date_d)
    ) < julianday(
      sp.end_after_y || '-' || printf('%02d', sp.end_after_m) || '-' || printf('%02d', sp.end_after_d)
-   )) AS cover_value
+   )) AS cover_count
 FROM stat_periods sp
 LEFT JOIN requirements r ON r.actual_y IS NOT NULL
   AND julianday(

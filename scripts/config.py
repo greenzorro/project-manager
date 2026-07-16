@@ -47,6 +47,7 @@ DEFAULT_PROJECT_NAME = os.environ.get("PM_DEFAULT_PROJECT", "")
 DEFAULT_OWNER = os.environ.get("PM_DEFAULT_OWNER", "")
 
 # Business constants.
+# Cover dashboard value = cover_outputs.count sum (v_stats_by_period.cover_count) × this multiplier.
 COVER_VALUE_MULTIPLIER = 20
 FY_START_MONTH = 4
 FY_END_MONTH = 3

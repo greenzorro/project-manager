@@ -80,7 +80,7 @@ The dashboard is built around a specific set of requirement types (UI design, da
 
 | Constant | Default | Purpose |
 |----------|---------|---------|
-| `COVER_VALUE_MULTIPLIER` | 20 | Cover image value multiplier |
+| `COVER_VALUE_MULTIPLIER` | 20 | Cover image value multiplier (`cover_count` × multiplier) |
 | `FY_START_MONTH` | 4 | Fiscal year start month |
 | `FY_END_MONTH` | 3 | Fiscal year end month |
 

@@ -17,7 +17,7 @@ def query_dashboard_data(conn: sqlite3.Connection) -> dict:
         dict(row)
         for row in conn.execute(
             """
-            SELECT period_name, period_type, req_count, ui_pages, reports, courses, cover_value, efficiency
+            SELECT period_name, period_type, req_count, ui_pages, reports, courses, cover_count, efficiency
             FROM v_stats_by_period
             ORDER BY
               CASE period_type WHEN '月' THEN 1 WHEN 'S' THEN 2 ELSE 3 END,
@@ -25,6 +25,8 @@ def query_dashboard_data(conn: sqlite3.Connection) -> dict:
             """
         )
     ]
+    for row in rows:
+        row["cover_value"] = (row["cover_count"] or 0) * COVER_VALUE_MULTIPLIER
     months = [row for row in rows if row["period_type"] == "月"]
     fiscal_years = [row for row in rows if row["period_type"] == "财年"]
     current_fy = max(fiscal_years, key=lambda r: r["period_name"])

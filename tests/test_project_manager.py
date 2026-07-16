@@ -393,17 +393,18 @@ class ProjectManagerDryRunTests(unittest.TestCase):
             ],
         )
 
-    def test_adjust_schedule_end_shorten_merges_segments(self):
-        self.insert_req("dry-merge", "Dry Merge")
-        self.insert_sched("dry-sm", "dry-merge", date(2026, 8, 7), date(2026, 8, 7), "Alice")
-        adjust_schedule_end(str(self.db_path), "dry-sm", 2)
+    def test_adjust_schedule_end_shorten_secondary_segment(self):
+        """Shorten one segment of a split schedule; sibling segments stay as-is."""
+        self.insert_req("dry-split", "Dry Split")
+        self.insert_sched("dry-ss", "dry-split", date(2026, 8, 7), date(2026, 8, 7), "Alice")
+        adjust_schedule_end(str(self.db_path), "dry-ss", 2)
 
         sched_ids = [
             r["id"]
             for r in self.rows(
                 """
                 SELECT id FROM schedules
-                WHERE requirement_id='dry-merge'
+                WHERE requirement_id='dry-split'
                 AND start_y=2026 AND start_m=8 AND start_d=10
                 """
             )
@@ -415,10 +416,10 @@ class ProjectManagerDryRunTests(unittest.TestCase):
             [(date(2026, 8, 10), date(2026, 8, 10))],
         )
         self.assertEqual(
-            self.task_rows(["dry-merge"]),
+            self.task_rows(["dry-split"]),
             [
-                {"name": "Dry Merge", "owner": "Alice", "start": "2026-08-07", "end": "2026-08-07"},
-                {"name": "Dry Merge", "owner": "Alice", "start": "2026-08-10", "end": "2026-08-10"},
+                {"name": "Dry Split", "owner": "Alice", "start": "2026-08-07", "end": "2026-08-07"},
+                {"name": "Dry Split", "owner": "Alice", "start": "2026-08-10", "end": "2026-08-10"},
             ],
         )
 
@@ -555,10 +556,42 @@ class ProjectManagerDryRunTests(unittest.TestCase):
         conn = sqlite3.connect(init_path)
         try:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM req_types WHERE id='__sys__'").fetchone()[0], 1)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM projects WHERE id='__sys__'").fetchone()[0], 1)
+            sys_names = {
+                row[0]
+                for row in conn.execute(
+                    "SELECT name FROM requirements WHERE name IN ('__公共假期__', '__请假__')"
+                )
+            }
+            self.assertEqual(sys_names, {"__公共假期__", "__请假__"})
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM stat_periods").fetchone()[0], 17)
+            open_status = {
+                row[0]: row[1]
+                for row in conn.execute(
+                    "SELECT name, status FROM v_requirements WHERE actual_y IS NULL"
+                )
+            }
+            self.assertEqual(open_status["__公共假期__"], "⚠️特殊")
+            self.assertEqual(open_status["__请假__"], "⚠️特殊")
         finally:
             conn.close()
         self.assertEqual(sum(1 for check in run_doctor(str(init_path)) if not check.ok), 0)
+
+    def test_requirement_status_distinguishes_open_and_system(self):
+        self.insert_req("dry-open", "Dry Open Task")
+        rows = {
+            row["name"]: row["status"]
+            for row in self.rows(
+                """
+                SELECT name, status FROM v_requirements
+                WHERE name IN ('Dry Open Task', '__公共假期__', '__请假__')
+                """
+            )
+        }
+        self.assertEqual(rows["Dry Open Task"], "🚀进行中")
+        self.assertEqual(rows["__公共假期__"], "⚠️特殊")
+        self.assertEqual(rows["__请假__"], "⚠️特殊")
+        self.assertEqual(sum(1 for check in run_doctor(str(self.db_path)) if not check.ok), 0)
 
     def test_cli_requirement_schedule_holiday_stats_and_render(self):
         self.run_pm(

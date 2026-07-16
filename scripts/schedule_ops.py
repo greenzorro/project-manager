@@ -45,7 +45,7 @@ def plan_schedule_move(
         FROM schedules s
         JOIN requirements r ON s.requirement_id = r.id
         WHERE s.owner = ?
-          AND r.name NOT LIKE '/_/_%' ESCAPE '/'
+          AND r.name NOT GLOB '__*'
           AND date(s.start_y || '-' || printf('%02d', s.start_m) || '-' || printf('%02d', s.start_d)) >= date(?)
         ORDER BY s.start_y, s.start_m, s.start_d, r.name
         """,

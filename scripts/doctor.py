@@ -94,6 +94,8 @@ def run_doctor(db_path: str) -> list[Check]:
         except sqlite3.Error as exc:
             checks.append(Check(f"{view}_queryable", False, str(exc)))
 
+    checks.extend(check_requirement_status(conn))
+
     schema_sql = scalar(
         conn,
         "SELECT sql FROM sqlite_master WHERE type='table' AND name='requirements'",
@@ -120,6 +122,35 @@ def print_doctor(checks: list[Check]) -> int:
         print(f"{status:4} {check.name}: {check.detail}")
     print(f"\n{len(checks) - len(failed)} passed, {len(failed)} failed")
     return 1 if failed else 0
+
+
+def check_requirement_status(conn: sqlite3.Connection) -> list[Check]:
+    """Open requirements: names matching __* are special; others are in progress."""
+    checks: list[Check] = []
+    try:
+        bad_open = scalar(
+            conn,
+            """
+            SELECT COUNT(*) FROM v_requirements
+            WHERE actual_y IS NULL
+              AND name NOT GLOB '__*'
+              AND status != '🚀进行中'
+            """,
+        )
+        bad_special = scalar(
+            conn,
+            """
+            SELECT COUNT(*) FROM v_requirements
+            WHERE actual_y IS NULL
+              AND name GLOB '__*'
+              AND status != '⚠️特殊'
+            """,
+        )
+        checks.append(Check("open_status_in_progress", bad_open == 0, f"{bad_open} bad rows"))
+        checks.append(Check("system_status_special", bad_special == 0, f"{bad_special} bad rows"))
+    except sqlite3.Error as exc:
+        checks.append(Check("requirement_status_rules", False, str(exc)))
+    return checks
 
 
 def check_dates(conn: sqlite3.Connection) -> list[Check]:

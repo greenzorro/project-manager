@@ -11,7 +11,8 @@ Covered areas:
 - Public holidays and personal leave
 - Static HTML rendering for dashboard, calendar, recent tasks, and history
 - Fiscal period computation and requester statistics
-- Database initialization, backup restore, and doctor checks
+- Database initialization (including system holiday/leave rows), backup restore, and doctor checks
+- Requirement status rules (`🚀进行中` vs `⚠️特殊` via `GLOB '__*'`)
 - CLI commands for requirement, schedule, holiday, stats, and render operations
 - Sensitive-data hygiene checks for committed history and current project text
 
@@ -26,7 +27,7 @@ git diff --check
 ## Result
 
 ```text
-============================= 20 passed in 0.99s ==============================
+============================= 23 passed in 1.58s ==============================
 ```
 
 Additional checks:

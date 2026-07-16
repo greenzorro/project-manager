@@ -56,7 +56,7 @@ def add_holiday_and_push(
         FROM schedules s
         JOIN requirements r ON s.requirement_id = r.id
         WHERE s.owner != '-'
-          AND r.name NOT LIKE '/_/_%' ESCAPE '/'
+          AND r.name NOT GLOB '__*'
           AND date(s.end_y || '-' || printf('%02d', s.end_m) || '-' || printf('%02d', s.end_d)) >= date(?)
           {owner_clause}
         ORDER BY s.start_y, s.start_m, s.start_d

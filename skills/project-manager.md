@@ -63,9 +63,9 @@
 
 ## 视图
 
-- `v_requirements` — 需求 + 状态/时间跨度
+- `v_requirements` — 需求 + 状态/时间跨度（`name GLOB '__*'` 为系统特殊行）
 - `v_schedules` — 排期 + duration
-- `v_stats_by_period` — 按时间统计聚合
+- `v_stats_by_period` — 按时间统计聚合（`cover_count` 为封面张数；价值 = count × `COVER_VALUE_MULTIPLIER`）
 
 ## 常见操作
 
@@ -73,6 +73,8 @@
 ```sql
 SELECT * FROM v_requirements WHERE status='🚀进行中' ORDER BY received_y DESC, received_m DESC, received_d DESC
 ```
+
+系统占位（假期/请假等）状态为 `⚠️特殊`，匹配规则是名称以两个下划线开头（`GLOB '__*'`）。
 
 ### 加需求
 

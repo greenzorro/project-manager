@@ -28,6 +28,7 @@ def init_db(db_path: str) -> None:
         conn.executescript(f.read())
 
     _seed_req_types(conn)
+    _seed_system_entities(conn)
     _seed_stat_periods(conn)
 
     conn.commit()
@@ -48,6 +49,38 @@ def _seed_req_types(conn: sqlite3.Connection) -> None:
         conn.execute(
             "INSERT OR IGNORE INTO req_types (id, name) VALUES (?, ?)",
             (type_id, name),
+        )
+
+
+def _seed_system_entities(conn: sqlite3.Connection) -> None:
+    """Seed structural rows required by holiday/leave schedule operations."""
+    conn.execute(
+        "INSERT OR IGNORE INTO projects (id, name) VALUES (?, ?)",
+        ("__sys__", "__sys__"),
+    )
+    today = date.today()
+    for req_id, name in (
+        ("req-sys-holiday", "__公共假期__"),
+        ("req-sys-leave", "__请假__"),
+    ):
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO requirements (
+                id, name, project_id, type_id, requesters,
+                received_y, received_m, received_d
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                req_id,
+                name,
+                "__sys__",
+                "__sys__",
+                "__sys__",
+                today.year,
+                today.month,
+                today.day,
+            ),
         )
 
 
