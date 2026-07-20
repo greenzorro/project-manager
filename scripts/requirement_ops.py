@@ -12,7 +12,7 @@ from datetime import date
 
 from db import DEFAULT_OWNER, DEFAULT_PROJECT_NAME, connect, resolve_project_id
 from schedule_utils import add_business_days, load_non_business_days, split_at_non_business
-from schedule_ops import apply_schedule_move, plan_schedule_move
+from schedule_ops import apply_schedule_move_on_connection, plan_schedule_move
 
 
 def insert_and_push(
@@ -78,6 +78,11 @@ def insert_and_push(
 
     new_start = insert_date
     new_end = add_business_days(new_start, duration_days - 1, non_bd)
+    plans = (
+        plan_schedule_move(db_path, owner, insert_date, push_days)
+        if insert_before_req_name
+        else []
+    )
 
     conn.execute("BEGIN")
     try:
@@ -108,17 +113,13 @@ def insert_and_push(
                     owner,
                 ),
             )
+        apply_schedule_move_on_connection(conn, plans)
         conn.commit()
-    except sqlite3.Error:
+    except Exception:
         conn.rollback()
-        conn.close()
         raise
-    conn.close()
-
-    if insert_before_req_name:
-        plans = plan_schedule_move(db_path, owner, insert_date, push_days)
-        plans = [p for p in plans if p.row["requirement_id"] != new_req_id]
-        apply_schedule_move(db_path, plans)
+    finally:
+        conn.close()
 
 
 def create_requirement(

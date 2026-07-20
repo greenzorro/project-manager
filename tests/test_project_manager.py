@@ -9,6 +9,7 @@ import unittest
 from contextlib import redirect_stdout
 from datetime import date
 from pathlib import Path
+from unittest.mock import patch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
@@ -255,6 +256,41 @@ class ProjectManagerDryRunTests(unittest.TestCase):
             ],
         )
 
+    def test_holiday_insert_and_schedule_push_roll_back_together(self):
+        self.insert_req("dry-a", "Dry Alice")
+        self.insert_sched("dry-sa", "dry-a", date(2026, 7, 1), date(2026, 7, 1), "Alice")
+        before_holidays = self.scalar(
+            """
+            SELECT COUNT(*) FROM schedules s
+            JOIN requirements r ON r.id=s.requirement_id
+            WHERE r.name='__公共假期__'
+            """
+        )
+
+        with patch(
+            "holiday_ops.apply_schedule_move_on_connection",
+            side_effect=sqlite3.OperationalError("schedule update failed"),
+        ):
+            with self.assertRaises(sqlite3.OperationalError):
+                add_holiday_and_push(
+                    str(self.db_path), date(2026, 7, 1), date(2026, 7, 1), holiday=True
+                )
+
+        self.assertEqual(
+            self.scalar(
+                """
+                SELECT COUNT(*) FROM schedules s
+                JOIN requirements r ON r.id=s.requirement_id
+                WHERE r.name='__公共假期__'
+                """
+            ),
+            before_holidays,
+        )
+        self.assertEqual(
+            self.task_rows(["dry-a"]),
+            [{"name": "Dry Alice", "owner": "Alice", "start": "2026-07-01", "end": "2026-07-01"}],
+        )
+
     def test_personal_leave_pushes_only_that_owner(self):
         self.insert_req("dry-a", "Dry Alice")
         self.insert_sched("dry-sa", "dry-a", date(2026, 7, 6), date(2026, 7, 6), "Alice")
@@ -323,6 +359,36 @@ class ProjectManagerDryRunTests(unittest.TestCase):
                 {"name": "Dry Target", "start": "2026-08-04"},
                 {"name": "Dry Later", "start": "2026-08-05"},
             ],
+        )
+
+    def test_requirement_insert_and_schedule_push_roll_back_together(self):
+        self.insert_req("dry-target", "Dry Target")
+        self.insert_sched(
+            "dry-st", "dry-target", date(2026, 8, 3), date(2026, 8, 3), "Alice"
+        )
+
+        with patch(
+            "requirement_ops.apply_schedule_move_on_connection",
+            side_effect=sqlite3.OperationalError("schedule update failed"),
+        ):
+            with self.assertRaises(sqlite3.OperationalError):
+                insert_and_push(
+                    str(self.db_path),
+                    "Dry Rolled Back",
+                    self.req_type("数据分析"),
+                    "DryRun",
+                    project_id=self.project("官方网站"),
+                    owner="Alice",
+                    insert_before_req_name="Dry Target",
+                )
+
+        self.assertEqual(
+            self.scalar("SELECT COUNT(*) FROM requirements WHERE name='Dry Rolled Back'"),
+            0,
+        )
+        self.assertEqual(
+            self.task_rows(["dry-target"]),
+            [{"name": "Dry Target", "owner": "Alice", "start": "2026-08-03", "end": "2026-08-03"}],
         )
 
     def test_insert_and_push_splits_inserted_task_over_weekend(self):

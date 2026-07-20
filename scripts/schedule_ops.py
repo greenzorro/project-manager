@@ -63,54 +63,61 @@ def plan_schedule_move(
     return plans
 
 
+def apply_schedule_move_on_connection(
+    conn: sqlite3.Connection, plans: list[ScheduleMovePlan]
+) -> None:
+    """Apply precomputed moves using the caller's transaction."""
+    for plan in plans:
+        first_start, first_end = plan.segments[0]
+        conn.execute(
+            """
+            UPDATE schedules
+            SET start_y=?, start_m=?, start_d=?,
+                end_y=?, end_m=?, end_d=?
+            WHERE id=?
+            """,
+            (
+                first_start.year,
+                first_start.month,
+                first_start.day,
+                first_end.year,
+                first_end.month,
+                first_end.day,
+                plan.row["id"],
+            ),
+        )
+        for seg_start, seg_end in plan.segments[1:]:
+            conn.execute(
+                """
+                INSERT INTO schedules (
+                    id, requirement_id,
+                    start_y, start_m, start_d,
+                    end_y, end_m, end_d,
+                    owner
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    plan.row["requirement_id"],
+                    seg_start.year,
+                    seg_start.month,
+                    seg_start.day,
+                    seg_end.year,
+                    seg_end.month,
+                    seg_end.day,
+                    plan.row["owner"],
+                ),
+            )
+
+
 def apply_schedule_move(db_path: str, plans: list[ScheduleMovePlan]) -> None:
     conn = connect(db_path)
     conn.execute("BEGIN")
     try:
-        for plan in plans:
-            first_start, first_end = plan.segments[0]
-            conn.execute(
-                """
-                UPDATE schedules
-                SET start_y=?, start_m=?, start_d=?,
-                    end_y=?, end_m=?, end_d=?
-                WHERE id=?
-                """,
-                (
-                    first_start.year,
-                    first_start.month,
-                    first_start.day,
-                    first_end.year,
-                    first_end.month,
-                    first_end.day,
-                    plan.row["id"],
-                ),
-            )
-            for seg_start, seg_end in plan.segments[1:]:
-                conn.execute(
-                    """
-                    INSERT INTO schedules (
-                        id, requirement_id,
-                        start_y, start_m, start_d,
-                        end_y, end_m, end_d,
-                        owner
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        str(uuid.uuid4()),
-                        plan.row["requirement_id"],
-                        seg_start.year,
-                        seg_start.month,
-                        seg_start.day,
-                        seg_end.year,
-                        seg_end.month,
-                        seg_end.day,
-                        plan.row["owner"],
-                    ),
-                )
+        apply_schedule_move_on_connection(conn, plans)
         conn.commit()
-    except sqlite3.Error:
+    except Exception:
         conn.rollback()
         raise
     finally:

@@ -8,7 +8,8 @@ Covered areas:
 
 - Requirement creation, insertion, delivery, and validation rules
 - Schedule creation, movement (forward and backward), adjustment (extend and shorten), weekend splitting, and non-business-day handling
-- Public holidays and personal leave
+- Public holidays and personal leave, including atomic rollback with the affected schedule push
+- Requirement insertion and schedule push as one atomic transaction
 - Static HTML rendering for dashboard, calendar, recent tasks, and history
 - Fiscal period computation and requester statistics
 - Database initialization (including system holiday/leave rows), backup restore, and doctor checks
@@ -27,7 +28,8 @@ git diff --check
 ## Result
 
 ```text
-============================= 23 passed in 1.58s ==============================
+Ran 25 tests in 4.941s
+OK
 ```
 
 Additional checks:
