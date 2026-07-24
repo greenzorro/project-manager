@@ -58,28 +58,29 @@ Stand up this local SQLite project-manager, wire the skill, then **operate** req
 ## Install / first-time setup
 
 1. Clone and enter the repo; install Pillow.
-2. Sample data:
-   ```bash
-   python3 scripts/init.py
-   python3 scripts/pm.py render-html
-   ```
-   Open `demo/html/dashboard.html` to verify.
+2. Sample data: run the commands below, then open `demo/html/dashboard.html` to verify.
+
+```bash
+python3 scripts/init.py
+python3 scripts/pm.py render-html
+```
+
 3. Real data: copy `.env.example` → `.env`, set `PM_DATA_DIR`, re-run init/render. **Read `.env` before every later operation.**
 4. Install skill: copy `skills/project-manager.md` and/or `skills/SKILL.md` into the agent skills directory; fix paths to this clone.
 
 ## Usage
 
-Entrypoint: `python3 scripts/pm.py <command> …` (optional `--db-path`).
+Entrypoint: `python3 scripts/pm.py COMMAND ...` (optional `--db-path`).
 
-| Command | Purpose |
-|---------|---------|
-| `doctor` | DB / model consistency |
-| `compute-periods` | Recompute stat period dates |
-| `render-html` | Regenerate dashboard/calendar HTML |
-| `stats` | Local stats |
-| `requirement create/deliver/insert/thumbnail` | Requirement writes |
-| `schedule add/adjust/move` | Schedule mutations |
-| `holiday …` | Public holiday / personal leave |
+Commands:
+
+- `doctor` — DB / model consistency
+- `compute-periods` — recompute stat period dates
+- `render-html` — regenerate dashboard/calendar HTML
+- `stats` — local stats
+- `requirement create` / `deliver` / `insert` / `thumbnail` — requirement writes
+- `schedule add` / `adjust` / `move` — schedule mutations
+- `holiday ...` — public holiday / personal leave
 
 Also follow the installed skill for conversational CRUD. **Before any schedule mutation**, confirm “today” with a real clock/`date` command (skill red flag).
 
