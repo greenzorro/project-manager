@@ -39,6 +39,22 @@ The dashboard is built around a specific set of requirement types (UI design, da
 
 Defined in `scripts/config.py`.
 
+## Manual CLI
+
+After setup, you can drive the same tools without an agent:
+
+```bash
+python3 scripts/pm.py -h
+python3 scripts/pm.py doctor
+python3 scripts/pm.py render-html
+python3 scripts/pm.py requirement -h
+python3 scripts/pm.py schedule -h
+python3 scripts/pm.py holiday -h
+python3 scripts/pm.py stats
+```
+
+Prefer talking to an agent for routine CRUD; use CLI when you want direct control. Confirm calendar dates yourself before schedule changes.
+
 ---
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
@@ -47,36 +63,52 @@ Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/a
 
 # For Agent
 
-Stand up this local SQLite project-manager on the current machine, wire the skill, smoke-test with `demo/`, then operate via CLI / skill. After setup, routine CRUD and scheduling are your job until the human takes over product decisions.
+Stand up this local SQLite project-manager, wire the skill, then **operate** requirements/schedules/HTML via CLI or skill.
 
 ## Prerequisites
 
 - Python 3
-- `pip install Pillow` (only non-stdlib dependency)
+- `pip install Pillow`
 - Write access to a data directory (default: repo `demo/`)
 
-## Steps
+## Install / first-time setup
 
-1. Clone and enter the repo. Install Pillow.
-2. Initialize / render sample data:
+1. Clone and enter the repo; install Pillow.
+2. Sample data:
    ```bash
    python3 scripts/init.py
    python3 scripts/pm.py render-html
    ```
-   Open `demo/html/dashboard.html` (or the HTML under `PM_DATA_DIR`) to verify pages render.
-3. For real data (not demo): copy `.env.example` → `.env`, set `PM_DATA_DIR` to an absolute data path, and re-run init/render against that tree. Read `.env` before every later operation.
-4. Install the agent skill: copy `skills/project-manager.md` (and/or `skills/SKILL.md` in this checkout) into the agent skills directory and point any path inside it at this clone.
-5. Day-to-day: use `python3 scripts/pm.py -h` and the skill doc for requirements, schedules, delivery marks, holidays, and `render-html`. Prefer the skill’s date-confirmation rule before any schedule mutation.
-6. When the human only needs dashboards: regenerate HTML and stop—browsing calendar/history/dashboard is a human task.
+   Open `demo/html/dashboard.html` to verify.
+3. Real data: copy `.env.example` → `.env`, set `PM_DATA_DIR`, re-run init/render. **Read `.env` before every later operation.**
+4. Install skill: copy `skills/project-manager.md` and/or `skills/SKILL.md` into the agent skills directory; fix paths to this clone.
+
+## Usage
+
+Entrypoint: `python3 scripts/pm.py <command> …` (optional `--db-path`).
+
+| Command | Purpose |
+|---------|---------|
+| `doctor` | DB / model consistency |
+| `compute-periods` | Recompute stat period dates |
+| `render-html` | Regenerate dashboard/calendar HTML |
+| `stats` | Local stats |
+| `requirement create/deliver/insert/thumbnail` | Requirement writes |
+| `schedule add/adjust/move` | Schedule mutations |
+| `holiday …` | Public holiday / personal leave |
+
+Also follow the installed skill for conversational CRUD. **Before any schedule mutation**, confirm “today” with a real clock/`date` command (skill red flag).
+
+After data changes that should appear on dashboards: `python3 scripts/pm.py render-html`.
 
 ## Hand off to the human
 
-- Choosing real project names, owners, and business meaning of requirement types
-- Viewing HTML dashboards in a browser
-- Any customization of fiscal year / cover multiplier / chart taxonomy (they can ask you later)
+- Business meaning of projects/owners/types
+- Viewing HTML in a browser
+- Dashboard taxonomy customization requests
 
 ## Red lines
 
-- Do not point `PM_DATA_DIR` at the wrong machine path or overwrite production `pm.db` without confirmation
-- Do not invent schedule dates from chat memory—confirm “today” with a real clock/`date` command when the skill requires it
-- Schema and ops detail: `notes.md` and `skills/`; keep README changes out of those contracts unless asked
+- Do not point `PM_DATA_DIR` at the wrong path or overwrite production `pm.db` without confirmation
+- Do not invent schedule dates from chat memory
+- Schema/ops: `notes.md` and `skills/`
