@@ -43,6 +43,8 @@ Defined in `scripts/config.py`.
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
 
+---
+
 # For Agent
 
 Stand up this local SQLite project-manager on the current machine, wire the skill, smoke-test with `demo/`, then operate via CLI / skill. After setup, routine CRUD and scheduling are your job until the human takes over product decisions.
