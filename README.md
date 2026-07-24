@@ -14,7 +14,7 @@ A lightweight, local-first requirement management and output tracking system. SQ
 - **Beautiful dashboards**: Auto-generated HTML with calendar view, task tracking, and interactive ECharts statistics
 - **Data sovereignty**: Everything stays on your machine
 
-Ask an agent to install and wire this repo on your machine (see `# For Agent` below). After that, you mostly **talk to the agent** for CRUD/scheduling and **open the HTML dashboards** yourself.
+Talk to an agent for CRUD and scheduling; open the HTML dashboards yourself.
 
 ## Pages
 
