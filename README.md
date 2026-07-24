@@ -37,23 +37,7 @@ The dashboard is built around a specific set of requirement types (UI design, da
 | `FY_START_MONTH` | 4 | Fiscal year start month |
 | `FY_END_MONTH` | 3 | Fiscal year end month |
 
-Defined in `scripts/config.py`.
-
-## Manual CLI
-
-After setup, you can drive the same tools without an agent:
-
-```bash
-python3 scripts/pm.py -h
-python3 scripts/pm.py doctor
-python3 scripts/pm.py render-html
-python3 scripts/pm.py requirement -h
-python3 scripts/pm.py schedule -h
-python3 scripts/pm.py holiday -h
-python3 scripts/pm.py stats
-```
-
-Prefer talking to an agent for routine CRUD; use CLI when you want direct control. Confirm calendar dates yourself before schedule changes.
+Defined in `scripts/config.py`. Confirm calendar dates yourself before schedule changes.
 
 ---
 

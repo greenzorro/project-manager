@@ -37,23 +37,7 @@
 | `FY_START_MONTH` | 4 | 财年起始月 |
 | `FY_END_MONTH` | 3 | 财年结束月 |
 
-定义在 `scripts/config.py`。
-
-## 手动命令行
-
-装好后你也可以不用 Agent、直接跑：
-
-```bash
-python3 scripts/pm.py -h
-python3 scripts/pm.py doctor
-python3 scripts/pm.py render-html
-python3 scripts/pm.py requirement -h
-python3 scripts/pm.py schedule -h
-python3 scripts/pm.py holiday -h
-python3 scripts/pm.py stats
-```
-
-日常增删改更适合跟 Agent 说；要直接控制时用 CLI。改排期前请自己确认「今天」的日期。
+定义在 `scripts/config.py`。改排期前请自己确认「今天」的日期。
 
 ---
 
