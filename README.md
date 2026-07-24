@@ -14,67 +14,20 @@ A lightweight, local-first requirement management and output tracking system. SQ
 - **Beautiful dashboards**: Auto-generated HTML with calendar view, task tracking, and interactive ECharts statistics
 - **Data sovereignty**: Everything stays on your machine
 
+Ask an agent to install and wire this repo on your machine (see `# For Agent` below). After that, you mostly **talk to the agent** for CRUD/scheduling and **open the HTML dashboards** yourself.
+
 ## Pages
 
-Four auto-generated HTML pages:
+Four auto-generated HTML pages (under your data dir’s `html/`, or `demo/html/` for the sample set):
 
 - **Calendar** — Monthly schedule view with color-coded owners and holiday markers
 - **Recent Tasks** — In-progress tasks and recently completed items with thumbnails
 - **History** — Full archive of completed requirements with screenshot cards
 - **Dashboard** — KPI metrics, monthly stats, top requesters, type breakdown, fiscal year comparisons
 
-## Quick Start
-
-```bash
-git clone https://github.com/greenzorro/project-manager.git
-cd project-manager
-python3 scripts/init.py
-python3 scripts/pm.py render-html
-open demo/html/dashboard.html
-```
-
-The project ships with a `demo/` directory containing fictional sample data—explore all features immediately.
-
-## Setup with AI Agent
-
-The system is designed for agent-driven operation. To integrate:
-
-1. Copy `skills/SKILL.md` to your agent's skills directory (e.g., `~/.agents/skills/project-manager/SKILL.md`)
-2. Update the path reference in the copied file to point to your local clone
-3. Set `PM_DATA_DIR` environment variable to your data directory (or use `.env`):
-
-```bash
-PM_DATA_DIR=/path/to/your/data
-```
-
-Without `PM_DATA_DIR`, the system uses `demo/` inside the project.
-
-## Project Structure
-
-```
-project-manager/
-├── notes.md                     # Developer memo
-├── README.md / README_ZH_CN.md  # Documentation
-├── .env.example                 # Environment configuration
-├── demo/                        # Sample data (no PM_DATA_DIR → used by default)
-├── sql/schema.sql               # DDL and view definitions
-├── scripts/                     # CLI tools and rendering engine
-└── skills/                      # AI agent skill files
-```
-
-## Dependencies
-
-- [Pillow](https://python-pillow.org/) — for thumbnail image processing (resize + WebP conversion)
-
-All other imports are from the Python standard library.
-
-```bash
-pip install Pillow
-```
-
 ## Customization
 
-The dashboard is built around a specific set of requirement types (UI design, data analysis, course production, internal efficiency) and a fiscal year starting in April. If your workflow differs, you'll want to customize `render_html.py`, `render_queries.py`, `render_components.py`, and `schema.sql`—the cover value formula, KPI metrics, chart labels, and type colors are all straightforward to modify. Since you're already using an AI agent to operate the system, you can just ask it to adapt the dashboard to your needs.
+The dashboard is built around a specific set of requirement types (UI design, data analysis, course production, internal efficiency) and a fiscal year starting in April. If your workflow differs, ask the agent to adapt `render_html.py`, `render_queries.py`, `render_components.py`, and `schema.sql`—cover value formula, KPI metrics, chart labels, and type colors.
 
 ## Configuration
 

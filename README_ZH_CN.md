@@ -14,67 +14,20 @@
 - **精美看板**：自动生成 HTML 仪表盘，含日历视图、任务追踪、ECharts 交互统计
 - **数据主权**：所有数据完全在本地
 
+请让 Agent 按英文 README 的 `# For Agent` 在本机安装并接通。之后你主要**跟 Agent 对话**做增删改/排期，并**自己打开 HTML 看板**查看。
+
 ## 页面
 
-四个自动生成的 HTML 页面：
+四个自动生成的 HTML 页面（在数据目录的 `html/` 下；示例数据为 `demo/html/`）：
 
 - **排期日历** — 月视图排期，按负责人着色，节假日标记
-- **近期任务** — 进行中 + 最近 7 天完成的任务，带缩略图
+- **近期任务** — 进行中 + 最近完成的任务，带缩略图
 - **历史任务** — 全部已完成需求，缩略图卡片网格
-- **统计仪表盘** — KPI 指标、月度统计、需求方 Top 10、类型分布环形图、财年对比
-
-## 快速开始
-
-```bash
-git clone https://github.com/greenzorro/project-manager.git
-cd project-manager
-python3 scripts/init.py
-python3 scripts/pm.py render-html
-open demo/html/dashboard.html
-```
-
-项目自带 `demo/` 目录，包含虚构示例数据，clone 即可体验全部功能。
-
-## 集成 AI Agent
-
-系统为 agent 驱动设计。集成步骤：
-
-1. 将 `skills/SKILL.md` 复制到 agent 的 skills 目录（如 `~/.agents/skills/project-manager/SKILL.md`）
-2. 更新复制文件中的路径引用，指向你的本地 clone 位置
-3. 设置 `PM_DATA_DIR` 环境变量指向数据目录（或使用 `.env` 文件）：
-
-```bash
-PM_DATA_DIR=/path/to/your/data
-```
-
-未设置 `PM_DATA_DIR` 时，默认使用项目内的 `demo/`。
-
-## 项目结构
-
-```
-project-manager/
-├── notes.md                     # 开发者备忘录
-├── README.md / README_ZH_CN.md  # 文档
-├── .env.example                 # 环境变量配置示例
-├── demo/                        # 示例数据（未设置 PM_DATA_DIR 时默认使用）
-├── sql/schema.sql               # 建表 DDL + 视图定义
-├── scripts/                     # CLI 工具和渲染引擎
-└── skills/                      # AI agent skill 文件
-```
-
-## 依赖
-
-- [Pillow](https://python-pillow.org/) — 缩略图图像处理（缩放 + WebP 转换）
-
-其余 import 均来自 Python 标准库。
-
-```bash
-pip install Pillow
-```
+- **统计仪表盘** — KPI 指标、月度统计、需求方 Top、类型分布、财年对比
 
 ## 自定义
 
-仪表盘围绕一组特定的需求类型（UI设计、数据分析、课程制作、内部提效）和 4 月起的财年构建。如果你的工作流不同，需要修改 `render_html.py`、`render_queries.py`、`render_components.py` 和 `schema.sql`——封面价值公式、KPI 指标、图表标签、类型颜色都很直观。既然你已经在用 AI agent 操作系统，直接告诉它帮你适配仪表盘即可。
+仪表盘围绕一组特定的需求类型（UI设计、数据分析、课程制作、内部提效）和 4 月起的财年构建。若工作流不同，让 Agent 帮你改 `render_html.py`、`render_queries.py`、`render_components.py` 和 `schema.sql`——封面价值公式、KPI、图表标签、类型颜色都很直观。
 
 ## 配置
 
