@@ -89,3 +89,41 @@ Defined in `scripts/config.py`.
 ---
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
+
+# For Agent
+
+Stand up this local SQLite project-manager on the current machine, wire the skill, smoke-test with `demo/`, then operate via CLI / skill. After setup, routine CRUD and scheduling are your job until the human takes over product decisions.
+
+## Prerequisites
+
+- Python 3
+- `pip install Pillow` (only non-stdlib dependency)
+- Write access to a data directory (default: repo `demo/`)
+
+## Steps
+
+1. Clone and enter the repo. Install Pillow.
+2. Initialize / render sample data:
+   ```bash
+   python3 scripts/init.py
+   python3 scripts/pm.py render-html
+   ```
+   Open `demo/html/dashboard.html` (or the HTML under `PM_DATA_DIR`) to verify pages render.
+3. For real data (not demo): copy `.env.example` → `.env`, set `PM_DATA_DIR` to an absolute data path, and re-run init/render against that tree. Read `.env` before every later operation.
+4. Install the agent skill: copy `skills/project-manager.md` (and/or `skills/SKILL.md` in this checkout) into the agent skills directory and point any path inside it at this clone.
+5. Day-to-day: use `python3 scripts/pm.py -h` and the skill doc for requirements, schedules, delivery marks, holidays, and `render-html`. Prefer the skill’s date-confirmation rule before any schedule mutation.
+6. When the human only needs dashboards: regenerate HTML and stop—browsing calendar/history/dashboard is a human task.
+
+## Hand off to the human
+
+- Choosing real project names, owners, and business meaning of requirement types
+- Viewing HTML dashboards in a browser
+- Any customization of fiscal year / cover multiplier / chart taxonomy (they can ask you later)
+
+## Red lines
+
+- Do not point `PM_DATA_DIR` at the wrong machine path or overwrite production `pm.db` without confirmation
+- Do not invent schedule dates from chat memory—confirm “today” with a real clock/`date` command when the skill requires it
+- Schema and ops detail: `notes.md` and `skills/`; keep README changes out of those contracts unless asked
+
+For Chinese readers, see [README_ZH_CN.md](README_ZH_CN.md) (human-facing only).
