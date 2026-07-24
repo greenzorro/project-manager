@@ -78,5 +78,3 @@ Stand up this local SQLite project-manager on the current machine, wire the skil
 - Do not point `PM_DATA_DIR` at the wrong machine path or overwrite production `pm.db` without confirmation
 - Do not invent schedule dates from chat memory—confirm “today” with a real clock/`date` command when the skill requires it
 - Schema and ops detail: `notes.md` and `skills/`; keep README changes out of those contracts unless asked
-
-For Chinese readers, see [README_ZH_CN.md](README_ZH_CN.md) (human-facing only).
