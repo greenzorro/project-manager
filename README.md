@@ -41,7 +41,7 @@ Defined in `scripts/config.py`. Confirm calendar dates yourself before schedule 
 
 ---
 
-Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
+Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik/about-me)
 
 ---
 
