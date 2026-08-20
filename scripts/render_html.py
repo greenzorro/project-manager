@@ -11,9 +11,10 @@ from __future__ import annotations
 import calendar
 import json
 import os
+import re
 import sqlite3
 from datetime import date
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from compute_periods import compute_periods
 from db import DATA_DIR, FY_END_MONTH, FY_START_MONTH, connect, format_date
@@ -232,11 +233,62 @@ def render_task_thumb(row: dict) -> str:
     return f'<div class="task-thumb placeholder"><span>{icon}无图</span></div>'
 
 
+def render_notes_content(notes: str) -> str:
+    if not notes:
+        return ""
+
+    url_pattern = re.compile(r"https?://[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+")
+    last_end = 0
+    result_parts = []
+
+    for match in url_pattern.finditer(notes):
+        start, end = match.span()
+        result_parts.append(escape(notes[last_end:start]))
+
+        raw_url = match.group(0)
+        trimmed_url = raw_url
+        trailing_part = ""
+
+        while trimmed_url:
+            last_char = trimmed_url[-1]
+            if last_char in ".,;:!?，。；！？：】》”’":
+                trailing_part = last_char + trailing_part
+                trimmed_url = trimmed_url[:-1]
+            elif last_char == ")" and trimmed_url.count("(") < trimmed_url.count(")"):
+                trailing_part = last_char + trailing_part
+                trimmed_url = trimmed_url[:-1]
+            elif last_char == "]" and trimmed_url.count("[") < trimmed_url.count("]"):
+                trailing_part = last_char + trailing_part
+                trimmed_url = trimmed_url[:-1]
+            elif last_char == "}" and trimmed_url.count("{") < trimmed_url.count("}"):
+                trailing_part = last_char + trailing_part
+                trimmed_url = trimmed_url[:-1]
+            elif last_char == "）" and trimmed_url.count("（") < trimmed_url.count("）"):
+                trailing_part = last_char + trailing_part
+                trimmed_url = trimmed_url[:-1]
+            else:
+                break
+
+        if trimmed_url:
+            parsed = urlparse(trimmed_url)
+            domain = parsed.netloc or trimmed_url
+            link_html = f'<a href="{escape(trimmed_url)}" target="_blank" rel="noopener noreferrer">{escape(domain)}</a>'
+            result_parts.append(link_html)
+
+        if trailing_part:
+            result_parts.append(escape(trailing_part))
+
+        last_end = end
+
+    result_parts.append(escape(notes[last_end:]))
+    return "".join(result_parts)
+
+
 def _render_notes(row: dict) -> str:
     notes = (row.get("notes") or "").strip()
     if not notes:
         return ""
-    return f'<div class="task-notes">{escape(notes)}</div>'
+    return f'<div class="task-notes">{render_notes_content(notes)}</div>'
 
 
 def render_delivery_link(value) -> str:

@@ -22,7 +22,7 @@ from doctor import run_doctor
 from holiday_ops import add_holiday_and_push
 from init import init_db
 from requirement_ops import create_requirement, insert_and_push, mark_delivered, set_delivery_thumbnail
-from render_html import render_html
+from render_html import render_html, render_notes_content
 from schedule_ops import add_schedule, adjust_schedule_end
 from stats import requester_stats
 from thumbnail import generate_thumbnail
@@ -548,14 +548,58 @@ class ProjectManagerDryRunTests(unittest.TestCase):
             actual = mark_delivered(str(self.db_path), req_id, delivery_url="https://example.com/dry")
         self.assertEqual(actual, date(2026, 8, 10))
 
-        self.insert_req("dry-note", "Dry Note Render", notes="<b>escaped note</b>")
+        self.insert_req(
+            "dry-note",
+            "Dry Note Render",
+            notes="参考原型: https://figma.com/file/xyz123 (设计稿) 以及文档: https://yuque.com/org/doc?tab=1&view=full，另外关注 http://localhost:8080/app。"
+        )
         self.insert_sched("dry-sn", "dry-note", date(2026, 9, 1), date(2026, 9, 1), "Alice")
         render_html(str(self.db_path), str(self.html_dir))
         recent = (self.html_dir / "recent.html").read_text(encoding="utf-8")
-        self.assertIn("&lt;b&gt;escaped note&lt;/b&gt;", recent)
-        self.assertNotIn("<b>escaped note</b>", recent)
+        self.assertIn('<a href="https://figma.com/file/xyz123" target="_blank" rel="noopener noreferrer">figma.com</a>', recent)
+        self.assertIn('<a href="https://yuque.com/org/doc?tab=1&amp;view=full" target="_blank" rel="noopener noreferrer">yuque.com</a>', recent)
+        self.assertIn('<a href="http://localhost:8080/app" target="_blank" rel="noopener noreferrer">localhost:8080</a>', recent)
+        self.assertIn("参考原型: ", recent)
+        self.assertIn(" (设计稿) 以及文档: ", recent)
+        self.assertIn("，另外关注 ", recent)
 
         self.assertEqual(sum(1 for check in run_doctor(str(self.db_path)) if not check.ok), 0)
+
+    def test_render_notes_content_url_extraction(self):
+        self.assertEqual(render_notes_content(""), "")
+        self.assertEqual(render_notes_content("普通纯文本备注"), "普通纯文本备注")
+        self.assertEqual(render_notes_content("<b>加粗</b> & '引号'"), "&lt;b&gt;加粗&lt;/b&gt; &amp; &#x27;引号&#x27;")
+
+        # Single URL
+        res1 = render_notes_content("项目地址 https://github.com/greenzorro/project-manager 是开源的")
+        self.assertEqual(
+            res1,
+            '项目地址 <a href="https://github.com/greenzorro/project-manager" target="_blank" rel="noopener noreferrer">github.com</a> 是开源的',
+        )
+
+        # Multiple URLs with punctuations and parentheses
+        res2 = render_notes_content(
+            "前端: (https://github.com/frontend/repo)，接口: https://api.example.com/v2/users?id=1&name=test。"
+        )
+        self.assertEqual(
+            res2,
+            '前端: (<a href="https://github.com/frontend/repo" target="_blank" rel="noopener noreferrer">github.com</a>)，'
+            '接口: <a href="https://api.example.com/v2/users?id=1&amp;name=test" target="_blank" rel="noopener noreferrer">api.example.com</a>。',
+        )
+
+        # Wikipedia URL with balanced parentheses
+        res3 = render_notes_content("查看 https://en.wikipedia.org/wiki/Function_(mathematics) 词条")
+        self.assertEqual(
+            res3,
+            '查看 <a href="https://en.wikipedia.org/wiki/Function_(mathematics)" target="_blank" rel="noopener noreferrer">en.wikipedia.org</a> 词条',
+        )
+
+        # Quotes and adjacent URLs
+        res4 = render_notes_content('参考"https://a.com"和"https://b.com:3000/api"')
+        self.assertEqual(
+            res4,
+            '参考&quot;<a href="https://a.com" target="_blank" rel="noopener noreferrer">a.com</a>&quot;和&quot;<a href="https://b.com:3000/api" target="_blank" rel="noopener noreferrer">b.com:3000</a>&quot;',
+        )
 
     def test_render_html_outputs_all_pages_with_expected_content(self):
         self.insert_req("dry-render", "Dry Render", notes="visible dry note")

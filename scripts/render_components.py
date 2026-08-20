@@ -424,6 +424,13 @@ th { color: var(--muted); font-weight: 650; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.task-notes a {
+  color: var(--blue);
+  text-decoration: none;
+}
+.task-notes a:hover {
+  text-decoration: underline;
+}
 .task-thumb {
   width: 76px;
   aspect-ratio: 1;
