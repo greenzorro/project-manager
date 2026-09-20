@@ -6,6 +6,8 @@
 
 > 了解这套系统的设计理念：[什么是AI原生的数据系统？](https://victor42.eth.limo/post/ai-native-data-system)
 
+![排期日历](https://cdn.victor42.work/posts/2026-06/01a9a53be38ac38125ec5e439d0ee2d1.webp)
+
 ## 核心价值
 
 - **零基础设施**：单文件 SQLite，无需服务器、注册或云服务
@@ -20,10 +22,21 @@
 
 四个自动生成的 HTML 页面（在数据目录的 `html/` 下；示例数据为 `demo/html/`）：
 
-- **排期日历** — 月视图排期，按负责人着色，节假日标记
-- **近期任务** — 进行中 + 最近完成的任务，带缩略图
-- **历史任务** — 全部已完成需求，缩略图卡片网格
-- **统计仪表盘** — KPI 指标、月度统计、需求方 Top、类型分布、财年对比
+### 排期日历
+月视图排期，按负责人着色，节假日标记。
+![排期日历页面](https://cdn.victor42.work/posts/2026-06/01a9a53be38ac38125ec5e439d0ee2d1.webp)
+
+### 统计仪表盘
+KPI 指标、月度统计、需求方 Top、类型分布、财年对比（基于 ECharts）。
+![统计仪表盘页面](https://cdn.victor42.work/posts/2026-06/6c11adfcc19725d0155524aae1eedf6f.webp)
+
+### 近期任务
+进行中 + 最近完成的任务，带缩略图与交付追踪。
+![近期任务页面](https://cdn.victor42.work/posts/2026-06/1ef49a58e0fc77e16de145b8a8f10935.webp)
+
+### 历史任务
+全部已完成需求归档，缩略图卡片网格。
+![历史任务页面](https://cdn.victor42.work/posts/2026-06/4493b8709a24ae2c1a2ebd66f351e0de.webp)
 
 ## 自定义
 
@@ -38,6 +51,21 @@
 | `FY_END_MONTH` | 3 | 财年结束月 |
 
 定义在 `scripts/config.py`。改排期前请自己确认「今天」的日期。
+
+## 快速开始
+
+```bash
+# 1. 安装依赖
+pip install Pillow
+
+# 2. 初始化示例数据库
+python3 scripts/init.py
+
+# 3. 渲染生成 HTML 看板
+python3 scripts/pm.py render-html
+```
+
+在浏览器中直接打开 `demo/html/dashboard.html` 或 `demo/html/calendar.html` 即可查看效果。
 
 ---
 
