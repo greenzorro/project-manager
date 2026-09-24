@@ -109,4 +109,5 @@ After data changes that should appear on dashboards: `python3 scripts/pm.py rend
 
 - Do not point `PM_DATA_DIR` at the wrong path or overwrite production `pm.db` without confirmation
 - Do not invent schedule dates from chat memory
+- Do not `cp pm.db` into ad-hoc `.bak` snapshots. `backup.sql` re-exports after every `pm.py` command; snapshot rotation rules are in `skills/project-manager.md`
 - Schema/ops: `notes.md` and `skills/`
