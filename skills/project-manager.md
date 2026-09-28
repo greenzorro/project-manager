@@ -260,7 +260,7 @@ python scripts/pm.py render-html
 规则：
 
 1. **优先用 `pm.py` 命令，不要直接 import `*_ops` 函数**。直接调 Python 函数不经过 `main()`，`backup.sql` 不会刷新；这种路径下必须在操作结束后补跑一次 `python scripts/pm.py doctor` 完成导出。
-2. **禁止随手 `cp pm.db pm.db.bak.<时间戳>`**。这类手工快照曾一次堆到 37 个，彼此重复、且不含当前库缺失的数据，纯占空间。
+2. **禁止随手 `cp pm.db pm.db.bak.<时间戳>`**。这类手工快照彼此高度重复，通常不含当前库缺失的数据，只会持续堆积占空间。
 3. 确实需要时间点快照时（批量排期移动前、从旧库恢复前）：命名 `pm.db.bak-YYYYMMDD-事由`，**同月只保留最新一个**，另保留月度里程碑，其余用 `send2trash` 送废纸篓，不要 `rm`。
 4. 判断某快照能否删：核对它是否含当前 `pm.db` 缺失的 `requirements` / `schedules` 行。"字段值更旧"和"排期被重新分段后消失的旧段"都**不算**独有数据。
 
