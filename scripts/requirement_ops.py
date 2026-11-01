@@ -272,6 +272,25 @@ def mark_delivered(
     return actual_date
 
 
+def set_notes(db_path: str, req_id_or_name: str, notes: str) -> None:
+    """Set or clear a requirement's notes."""
+    conn = connect(db_path)
+    row = conn.execute(
+        "SELECT id FROM requirements WHERE id=? OR name=?",
+        (req_id_or_name, req_id_or_name),
+    ).fetchone()
+    if row is None:
+        conn.close()
+        raise ValueError(f"Requirement '{req_id_or_name}' not found")
+
+    conn.execute(
+        "UPDATE requirements SET notes=? WHERE id=?",
+        (notes, row["id"]),
+    )
+    conn.commit()
+    conn.close()
+
+
 def set_delivery_thumbnail(db_path: str, req_id_or_name: str, thumbnail: str) -> None:
     """Set a requirement delivery thumbnail path."""
     conn = connect(db_path)

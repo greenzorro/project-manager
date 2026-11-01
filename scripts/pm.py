@@ -19,7 +19,7 @@ from doctor import print_doctor, run_doctor
 from holiday_ops import add_holiday_and_push
 from output import print_table
 from render_html import render_html
-from requirement_ops import create_requirement, insert_and_push, mark_delivered, set_delivery_thumbnail
+from requirement_ops import create_requirement, insert_and_push, mark_delivered, set_delivery_thumbnail, set_notes
 from schedule_ops import add_schedule, adjust_schedule_end, apply_schedule_move, plan_schedule_move
 from stats import requester_stats
 from thumbnail import generate_thumbnail
@@ -145,6 +145,12 @@ def command_requirement_insert(args: argparse.Namespace) -> int:
         push_days=args.push_days,
     )
     print("Requirement inserted and subsequent schedules pushed.")
+    return 0
+
+
+def command_requirement_notes(args: argparse.Namespace) -> int:
+    set_notes(args.db_path, args.requirement, args.text or "")
+    print("Requirement notes cleared." if not args.text else "Requirement notes updated.")
     return 0
 
 
@@ -309,6 +315,11 @@ def build_parser() -> argparse.ArgumentParser:
     thumbnail.add_argument("--max-size", type=int, default=800, help="max long-edge pixels (default 800)")
     thumbnail.add_argument("--quality", type=int, default=85, help="WebP quality 1-100 (default 85)")
     thumbnail.set_defaults(func=command_requirement_thumbnail)
+
+    notes = requirement_subparsers.add_parser("notes", help="set or clear requirement notes")
+    notes.add_argument("requirement", help="requirement id or exact name")
+    notes.add_argument("--text", default="", help="notes text; omit or empty to clear")
+    notes.set_defaults(func=command_requirement_notes)
 
     schedule = subparsers.add_parser("schedule", help="schedule operations")
     schedule_subparsers = schedule.add_subparsers(dest="schedule_command", required=True)
