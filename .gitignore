@@ -15,6 +15,10 @@ Thumbs.db
 # Environment (contains personal paths)
 .env
 
+# SQLite runtime sidecars (created whenever a tracked .db is opened)
+*.db-wal
+*.db-shm
+
 # User data (if accidentally placed in project root)
 /pm.db
 /backup.sql
